@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Nitish Naidu Kandi</title>
+<meta name="description" content="Selected projects by Nitish Naidu Kandi — agentic AI systems, backend services, and full-stack products.">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .page-head{padding:170px 0 60px}
+  .case{border:1px solid var(--stroke);border-radius:24px;background:var(--card);backdrop-filter:blur(8px);
+    padding:46px;margin-bottom:34px;transition:.3s}
+  .case:hover{border-color:var(--violet)}
+  .case h3{font-family:var(--display);font-weight:400;font-size:clamp(1.4rem,3vw,2rem);margin-bottom:6px}
+  .case .meta{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--pink);margin-bottom:22px}
+  .case-grid{display:grid;grid-template-columns:1.4fr .6fr;gap:40px}
+  @media(max-width:780px){.case-grid{grid-template-columns:1fr}}
+  .case p{color:var(--dim);margin-bottom:14px;font-size:.98rem}
+  .case p strong{color:var(--ink);font-weight:600}
+  .case-side h4{font-family:var(--mono);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);margin:18px 0 10px}
+  .case-side h4:first-child{margin-top:0}
+  .back{display:inline-block;margin-bottom:30px;font-family:var(--mono);font-size:.78rem;color:var(--dim);transition:.25s}
+  .back:hover{color:var(--pink)}
+</style>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="spotlight" aria-hidden="true"></div>
+
+<nav>
+  <a href="/">Home</a>
+  <a href="/projects.html">Projects</a>
+  <a href="/#experience">Experience</a>
+  <a href="/#education">Education</a>
+  <a class="hire" href="/#contact">Hire me</a>
+</nav>
+
+<div class="page-head">
+  <div class="wrap">
+    <a class="back reveal in" href="/">← Back home</a>
+    <div class="kicker reveal in">Selected work</div>
+    <h2 class="reveal in" style="margin-bottom:0">Projects, in <span class="grad" style="background:linear-gradient(90deg,var(--violet),var(--pink),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:400">depth.</span></h2>
+  </div>
+</div>
+
+<section style="padding-top:20px">
+  <div class="wrap">
+
+    <article class="case reveal">
+      <div class="meta">PRJ·01 — Agentic systems · Full-stack</div>
+      <h3>Agentic Ad Delivery Optimization System</h3>
+      <div class="case-grid">
+        <div>
+          <p><strong>The problem.</strong> Ad campaign management is repetitive and reactive — humans tune budgets, targeting, and delivery long after the data already knew the answer.</p>
+          <p><strong>The build.</strong> I designed an agentic orchestration system on the <strong>Model Context Protocol (MCP)</strong> for standardized tool integration, so autonomous agents can reason through delivery optimizations end-to-end. The backend is <strong>Java + Spring</strong> with API-driven, decoupled services processing simulated ad requests at <strong>sub-200ms latency</strong> — mirroring real omnichannel ad-serving platforms.</p>
+          <p><strong>The product layer.</strong> A <strong>React</strong> dashboard for campaign management, shipped end-to-end, including resolving complex data-flow issues between the agentic workflow and the ad selection engine.</p>
+          <p><strong>The infrastructure.</strong> Containerized with Docker, deployed on <strong>AWS (ECS, SQS, S3)</strong>, with Terraform Infrastructure-as-Code and CI/CD pipelines achieving 95%+ test coverage.</p>
+        </div>
+        <div class="case-side">
+          <h4>Stack</h4>
+          <div class="tags">
+            <span class="tag">Java</span><span class="tag">Spring</span><span class="tag">MCP</span>
+            <span class="tag">React</span><span class="tag">AWS</span><span class="tag">Docker</span>
+            <span class="tag">Terraform</span><span class="tag">CI/CD</span>
+          </div>
+          <h4>Highlights</h4>
+          <p style="font-size:.88rem">Sub-200ms request latency · ~45% less manual campaign effort · 95%+ test coverage</p>
+          <h4>Code</h4>
+          <a class="go" style="color:var(--pink);font-weight:500" href="https://github.com/Nitishnaidu368" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="case reveal">
+      <div class="meta">PRJ·02 — Multi-agent AI · Research-grade</div>
+      <h3>Agentic Medical Diagnosis System</h3>
+      <div class="case-grid">
+        <div>
+          <p><strong>The problem.</strong> A single LLM diagnosing in isolation is brittle. Medicine is a team sport — diagnosis improves when multiple perspectives challenge and refine each other.</p>
+          <p><strong>The build.</strong> A <strong>multi-agent AI system</strong> for medical diagnosis implementing collaborative reasoning across three task types: ranking, multiple-choice, and open-ended diagnosis.</p>
+          <p><strong>The interesting part.</strong> Agent coordination is adaptive, modeled on the <strong>Big Five Teamwork Model</strong> from organizational psychology — leadership, mutual performance monitoring, backup behavior, adaptability, and team orientation, translated into agent behaviors. This improved reasoning consistency by <strong>~30%</strong>.</p>
+          <p><strong>The rigor.</strong> Decision aggregation across agents, adaptive agent recruitment based on case difficulty, and systematic performance evaluation against ground truth.</p>
+        </div>
+        <div class="case-side">
+          <h4>Stack</h4>
+          <div class="tags">
+            <span class="tag">Python</span><span class="tag">LLMs</span><span class="tag">Multi-agent</span>
+            <span class="tag">Evaluation</span>
+          </div>
+          <h4>Highlights</h4>
+          <p style="font-size:.88rem">~30% better reasoning consistency · adaptive agent recruitment · ground-truth evaluation</p>
+          <h4>Code</h4>
+          <a class="go" style="color:var(--pink);font-weight:500" href="https://github.com/Nitishnaidu368" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<footer id="contact" style="padding-top:40px">
+  <div class="wrap">
+    <p class="sub reveal">Want the full story behind any of these?</p>
+    <a class="email-big reveal" href="mailto:nitishnaidukandi@gmail.com">nitishnaidukandi@gmail.com</a>
+    <div class="fine">Nitish Naidu Kandi · © 2026</div>
+  </div>
+</footer>
+
+<script src="/script.js" defer></script>
+</body>
+</html>
