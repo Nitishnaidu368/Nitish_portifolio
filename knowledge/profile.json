@@ -1,0 +1,79 @@
+[
+  {
+    "id": "professional-summary",
+    "title": "Professional summary",
+    "category": "about",
+    "url": "/#about",
+    "text": "Nitish Naidu Kandi is a backend-first software engineer who builds full-stack products, cloud-native systems, and agentic AI workflows. His core engineering foundation includes Java, Kotlin, Spring, Python, React, REST APIs, microservices, serverless systems, and event-driven architecture. He takes features from design through deployment and focuses on reliable, maintainable systems."
+  },
+  {
+    "id": "ai-skills",
+    "title": "AI and agent engineering skills",
+    "category": "skills",
+    "url": "/#about",
+    "text": "Nitish works with agentic AI, multi-agent orchestration, retrieval-augmented generation, prompt engineering, and the Model Context Protocol. His public resume also lists LangChain, LangGraph, AutoGen, Semantic Kernel, Google ADK, Amazon Bedrock, Azure AI Foundry, Azure OpenAI, vector databases, AI governance, explainability, safety, and monitoring."
+  },
+  {
+    "id": "cloud-fullstack-skills",
+    "title": "Cloud and full-stack skills",
+    "category": "skills",
+    "url": "/#about",
+    "text": "Nitish's stack includes Java, Kotlin, Python, JavaScript, TypeScript, SQL, Spring, and React. He has experience with AWS, Azure, Docker, Kubernetes, Terraform, GitHub Actions, Azure DevOps, CI/CD pipelines, AWS Lambda, AWS SQS and SNS, Azure Functions, Azure Service Bus, databases, SaaS integrations, REST APIs, microservices, and event-driven systems."
+  },
+  {
+    "id": "project-ad-delivery",
+    "title": "Agentic Ad Delivery Optimization System",
+    "category": "projects",
+    "url": "/projects.html",
+    "text": "Nitish designed an agentic ad-delivery optimization system using the Model Context Protocol for standardized tool integration and autonomous campaign optimization. It combines a Java and Spring API-driven backend with a React campaign dashboard. The project describes simulated ad requests at sub-200ms latency, Docker containers, AWS ECS, SQS and S3, Terraform infrastructure, CI/CD, and more than 95% test coverage."
+  },
+  {
+    "id": "project-medical-agents",
+    "title": "Agentic Medical Diagnosis System",
+    "category": "projects",
+    "url": "/projects.html",
+    "text": "Nitish built a multi-agent research system for medical diagnosis tasks including ranking, multiple-choice, and open-ended diagnosis. The system uses collaborative reasoning, decision aggregation, adaptive agent recruitment based on case difficulty, and evaluation against ground truth. Agent coordination draws on the Big Five Teamwork Model: leadership, mutual performance monitoring, backup behavior, adaptability, and team orientation. The portfolio reports about 30% better reasoning consistency. This is a software and research project, not a source of medical advice."
+  },
+  {
+    "id": "project-climate-navigation",
+    "title": "RAG-Driven Climate Aware GPS Navigator",
+    "category": "projects",
+    "url": "/software_engineer_ai_agents.pdf",
+    "text": "Nitish's public resume describes a climate-aware GPS navigation project using retrieval-augmented AI workflows, LangChain, Amazon Bedrock, LangGraph, and AutoGen. It used event-driven cloud microservices, prompt engineering, enterprise data sources, SaaS APIs, CI/CD, Docker, and Kubernetes."
+  },
+  {
+    "id": "experience-accenture",
+    "title": "Accenture experience",
+    "category": "experience",
+    "url": "/#experience",
+    "text": "Nitish worked as a Software Engineer at Accenture in the United States from November 2024 through December 2025. His public portfolio describes backend services, full-stack features, cross-functional delivery, testing, and maintainable code. His resume emphasizes AI-agent workflows, RAG and conversational systems, cloud-native services on AWS and Azure, React interfaces, CI/CD, Docker, Kubernetes, governance, and production monitoring."
+  },
+  {
+    "id": "experience-pandora",
+    "title": "Pandora Finance experience",
+    "category": "experience",
+    "url": "/#experience",
+    "text": "Nitish worked as a Software Engineer at Pandora Finance in India from January 2022 through August 2024. He developed API-driven backend architecture and object-oriented services, including JWT authentication and role-based access control. His public resume also describes cloud and agent work for a DeFi platform using Python, Java, Amazon Bedrock, LangChain, AutoGen, RAG, React, AWS, and Azure."
+  },
+  {
+    "id": "experience-logicprog",
+    "title": "Logicprog Technologies experience",
+    "category": "experience",
+    "url": "/#experience",
+    "text": "Nitish worked as an Associate Software Engineer at Logicprog Technologies in India from January through December 2021. He contributed to serverless backend development, scalability, cloud services, and API design. His public resume also describes Python, REST APIs, event-driven systems, AWS and Azure functions, Docker, Kubernetes, CI/CD, and React interfaces."
+  },
+  {
+    "id": "education",
+    "title": "Education",
+    "category": "education",
+    "url": "/#education",
+    "text": "Nitish earned a Master of Science in Data Science and Applications from the University at Buffalo, SUNY, studying from August 2024 through December 2025. He earned a Bachelor of Technology in Computer Science and Engineering from Vellore Institute of Technology, studying from July 2018 through June 2021."
+  },
+  {
+    "id": "professional-contact",
+    "title": "Professional contact",
+    "category": "contact",
+    "url": "/#contact",
+    "text": "For professional opportunities, Nitish can be contacted at nitishnaidukandi@gmail.com. His GitHub profile is https://github.com/Nitishnaidu368 and his LinkedIn profile is https://linkedin.com/in/nitishk12. He is open to software engineering roles and collaborations, especially backend systems and agentic AI."
+  }
+]
