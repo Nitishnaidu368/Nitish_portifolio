@@ -4,5 +4,7 @@
   "dimensions": 768,
   "sourceHash": "unbuilt",
   "generatedAt": null,
+  "relevanceThreshold": null,
+  "calibratedAt": null,
   "chunks": []
 }
