@@ -9,6 +9,7 @@ import {
 
 const index = JSON.parse(readFileSync(new URL('../knowledge/index.json', import.meta.url), 'utf8'));
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const RATE_LIMIT_CLIENTS = 1_000;
 
 const SAFE_REPLIES = {
   sensitive: "I only share Nitish's professional portfolio information. You can ask about his skills, projects, experience, education, or professional contact links.",
@@ -21,6 +22,33 @@ function json(data, status = 200, headers = {}) {
     status,
     headers: { 'Cache-Control': 'no-store', ...headers }
   });
+}
+
+export function createRateLimiter({ limit = 3, windowMs = 60_000, now = Date.now } = {}) {
+  const windows = new Map();
+
+  // ponytail: this bounds one warm serverless instance; use Vercel WAF for a deployment-wide limit.
+  return request => {
+    const currentTime = now();
+    const client = (request.headers.get('x-vercel-forwarded-for') ||
+      request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
+    const window = windows.get(client);
+
+    if (!window || window.resetAt <= currentTime) {
+      if (!window && windows.size >= RATE_LIMIT_CLIENTS) {
+        for (const [key, value] of windows) {
+          if (value.resetAt <= currentTime) windows.delete(key);
+        }
+        if (windows.size >= RATE_LIMIT_CLIENTS) return Math.ceil(windowMs / 1_000);
+      }
+      windows.set(client, { count: 1, resetAt: currentTime + windowMs });
+      return 0;
+    }
+
+    if (window.count >= limit) return Math.max(1, Math.ceil((window.resetAt - currentTime) / 1_000));
+    window.count += 1;
+    return 0;
+  };
 }
 
 function validatePayload(body) {
@@ -75,6 +103,7 @@ Rules:
 - Discuss the medical diagnosis project only as an engineering project; never give medical advice.
 - If the evidence does not support an answer, say that the information is not available in the public portfolio.
 - Keep the answer clear, recruiter-friendly, and under 120 words.
+- Return plain text only. Do not use Markdown headings, bullets, bold markers, or links.
 
 Trusted portfolio evidence:
 ${evidence}`;
@@ -101,14 +130,19 @@ export async function generateText({ question, history, matches }, options = {})
       system_instruction: systemInstruction(matches),
       input: conversationInput(question, history),
       generation_config: {
-        thinking_level: 'minimal',
+        thinking_level: 'low',
         max_output_tokens: 300
       }
     }),
     signal: AbortSignal.timeout(options.timeoutMs || 20_000)
   });
 
-  if (!response.ok) throw new Error(`Gemini generation failed with status ${response.status}.`);
+  if (!response.ok) {
+    const error = new Error(`Gemini generation failed with status ${response.status}.`);
+    error.status = response.status;
+    error.retryAfter = response.headers.get('retry-after');
+    throw error;
+  }
   const data = await response.json();
   const output = [...(data.steps || [])].reverse().find(step => step.type === 'model_output');
   const answer = output?.content?.filter(part => part.type === 'text').map(part => part.text).join('').trim();
@@ -118,13 +152,22 @@ export async function generateText({ question, history, matches }, options = {})
 
 export function createChatHandler(dependencies = {}) {
   const knowledgeIndex = dependencies.index || index;
+  const allowRequest = dependencies.allowRequest || createRateLimiter();
   const embedQuery = dependencies.embedQuery || (async text =>
     (await embedTexts([{ text }], 'RETRIEVAL_QUERY'))[0]
   );
   const answerQuestion = dependencies.generateText || generateText;
 
   return async function chat(request) {
-    if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, { Allow: 'POST' });
+    if (request.method === 'GET') {
+      const ready = Boolean(knowledgeIndex.chunks?.length && Number.isFinite(knowledgeIndex.relevanceThreshold));
+      return json({
+        status: ready ? 'ready' : 'not_ready',
+        chunks: knowledgeIndex.chunks?.length || 0,
+        calibratedAt: knowledgeIndex.calibratedAt || null
+      }, ready ? 200 : 503);
+    }
+    if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, { Allow: 'GET, POST' });
     if (!request.headers.get('content-type')?.includes('application/json')) {
       return json({ error: 'Content-Type must be application/json.' }, 415);
     }
@@ -151,6 +194,13 @@ export function createChatHandler(dependencies = {}) {
       return json({ error: 'The portfolio knowledge index is not ready.' }, 503);
     }
 
+    const retryAfter = allowRequest(request);
+    if (retryAfter) {
+      return json({ error: 'Too many chat requests. Please wait a moment and try again.' }, 429, {
+        'Retry-After': String(retryAfter)
+      });
+    }
+
     try {
       const retrievalQuery = buildRetrievalQuery(payload.question, payload.history);
       const queryEmbedding = await embedQuery(retrievalQuery);
@@ -167,7 +217,12 @@ export function createChatHandler(dependencies = {}) {
       return json({ answer, status: 'answered', sources: sourcesFrom(matches) });
     } catch (error) {
       const missingKey = error.message === 'GEMINI_API_KEY is not configured.';
-      return json({ error: missingKey ? 'Chat is not configured.' : 'The portfolio assistant is temporarily unavailable.' }, missingKey ? 503 : 502);
+      const rateLimited = error.status === 429;
+      const status = missingKey ? 503 : rateLimited ? 429 : 502;
+      const message = missingKey ? 'Chat is not configured.' : rateLimited ?
+        'The portfolio assistant is at its temporary usage limit. Please try again shortly.' :
+        'The portfolio assistant is temporarily unavailable.';
+      return json({ error: message }, status, rateLimited ? { 'Retry-After': error.retryAfter || '60' } : {});
     }
   };
 }

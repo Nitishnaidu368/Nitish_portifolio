@@ -1,45 +1,125 @@
-const answers = {
-  skills: "I work with Java, Kotlin, Spring, React, Python, AWS, Docker, Kubernetes, Terraform, MCP, and LLMs.",
-  projects: "I’ve built agentic AI systems, including an ad delivery optimization system and a medical diagnosis multi-agent system.",
-  contact: "You can reach me at nitishnaidukandi@gmail.com.",
-  experience: "I have worked as a Software Engineer at Accenture and Pandora Finance, and earlier as an Associate Software Engineer at Logicprog Technologies.",
-  education: "I studied Data Science and Applications at the University at Buffalo, SUNY, and Computer Science and Engineering at VIT.",
-  about: "I am a backend-first software engineer who loves building practical full-stack products, cloud-native systems, and agentic AI workflows that actually ship."
-};
-
-function getBotReply(message) {
-  const text = message.toLowerCase();
-
-  if (text.includes("about") || text.includes("who") || text.includes("personality")) return answers.about;
-  if (text.includes("skill")) return answers.skills;
-  if (text.includes("project")) return answers.projects;
-  if (text.includes("experience") || text.includes("work")) return answers.experience;
-  if (text.includes("education") || text.includes("study") || text.includes("college") || text.includes("university")) return answers.education;
-  if (text.includes("contact") || text.includes("email")) return answers.contact;
-
-  return "I’m not totally sure about that one, but you can email me and I’ll be happy to answer!";
-}
-
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 const chatMessages = document.getElementById('chatMessages');
+const chatSubmit = document.getElementById('chatSubmit');
+const chatCard = document.getElementById('chatCard');
+const quickQuestions = [...document.querySelectorAll('.quick-question')];
+const chatHistory = [];
+let chatBusy = false;
 
-function addChatMessage(text, sender) {
+function addChatMessage(text, sender, sources = [], state = '') {
   if (!chatMessages) return;
 
+  const entry = document.createElement('div');
+  entry.className = `chat-entry ${sender}`;
   const message = document.createElement('div');
-  message.className = `message ${sender}`;
+  message.className = `message ${sender}${state ? ` ${state}` : ''}`;
   message.textContent = text;
-  chatMessages.appendChild(message);
+  entry.appendChild(message);
+
+  if (sources.length) {
+    const chips = document.createElement('div');
+    chips.className = 'chat-sources';
+    chips.setAttribute('aria-label', 'Portfolio sources');
+
+    for (const source of sources) {
+      const chip = document.createElement(source.url?.startsWith('/') ? 'a' : 'span');
+      chip.className = 'source-chip';
+      chip.textContent = source.title;
+      if (chip.tagName === 'A') chip.href = source.url;
+      chips.appendChild(chip);
+    }
+    entry.appendChild(chips);
+
+    const inspector = document.createElement('details');
+    inspector.className = 'rag-inspector';
+    const summary = document.createElement('summary');
+    summary.textContent = 'How this answer was found';
+    inspector.appendChild(summary);
+
+    const explanation = document.createElement('p');
+    explanation.className = 'rag-explanation';
+    explanation.textContent = 'Similarity measures how closely each portfolio chunk matched the question; it is not an answer-confidence score.';
+    inspector.appendChild(explanation);
+
+    for (const source of sources) {
+      const item = document.createElement('div');
+      item.className = 'retrieval-item';
+      const heading = document.createElement('strong');
+      heading.textContent = source.title;
+      const score = document.createElement('span');
+      score.className = 'retrieval-score';
+      score.textContent = `similarity ${Number(source.score).toFixed(3)}`;
+      const excerpt = document.createElement('p');
+      excerpt.textContent = source.excerpt;
+      item.append(heading, score, excerpt);
+      inspector.appendChild(item);
+    }
+    entry.appendChild(inspector);
+  }
+
+  chatMessages.appendChild(entry);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+  return entry;
 }
 
-function sendChatMessage(question) {
+function setChatBusy(busy) {
+  chatBusy = busy;
+  if (chatCard) chatCard.setAttribute('aria-busy', String(busy));
+  if (chatInput) chatInput.disabled = busy;
+  if (chatSubmit) {
+    chatSubmit.disabled = busy;
+    chatSubmit.textContent = busy ? 'Thinking…' : 'Send';
+  }
+  quickQuestions.forEach(button => { button.disabled = busy });
+}
+
+async function sendChatMessage(question) {
   const cleanQuestion = question.trim();
-  if (!cleanQuestion) return;
+  if (!cleanQuestion || chatBusy) return;
 
   addChatMessage(cleanQuestion, 'user');
-  addChatMessage(getBotReply(cleanQuestion), 'bot');
+  const previousHistory = chatHistory.slice(-6);
+  setChatBusy(true);
+  const loading = addChatMessage('Searching the portfolio…', 'bot', [], 'loading');
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+    let response;
+    try {
+      response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: cleanQuestion, history: previousHistory }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const result = await response.json();
+    if (!response.ok || typeof result.answer !== 'string') {
+      throw new Error(response.status === 429 ?
+        'The portfolio assistant is taking a short quota break. Please try again in a minute.' : '');
+    }
+    loading?.remove();
+    addChatMessage(result.answer, 'bot', Array.isArray(result.sources) ? result.sources : []);
+
+    if (result.status === 'answered') {
+      chatHistory.push(
+        { role: 'user', content: cleanQuestion },
+        { role: 'assistant', content: result.answer }
+      );
+      if (chatHistory.length > 6) chatHistory.splice(0, chatHistory.length - 6);
+    }
+  } catch (error) {
+    loading?.remove();
+    addChatMessage(error.message || 'I could not reach the portfolio knowledge service. Please try again.', 'bot', [], 'error');
+  } finally {
+    setChatBusy(false);
+    if (chatInput) chatInput.focus();
+  }
 }
 
 if (chatForm && chatInput) {
@@ -47,11 +127,10 @@ if (chatForm && chatInput) {
     event.preventDefault();
     sendChatMessage(chatInput.value);
     chatInput.value = '';
-    chatInput.focus();
   });
 }
 
-document.querySelectorAll('.quick-question').forEach(button => {
+quickQuestions.forEach(button => {
   button.addEventListener('click', () => {
     const question = button.dataset.question || button.textContent;
     sendChatMessage(question);

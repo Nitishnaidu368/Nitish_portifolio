@@ -64,9 +64,9 @@
       <div class="ask-grid">
         <div class="ask-copy reveal">
           <div class="kicker">Ask Nitish</div>
-          <h2>ChatGPT-style answers,<br>but about my portfolio.</h2>
-          <p>Ask anything about my skills, projects, experience, education, or contact details. The interface is built
-            to feel like a lightweight assistant panel.</p>
+          <h2>RAG-powered answers,<br>grounded in my work.</h2>
+          <p>Ask about my skills, projects, experience, education, or professional contact details. Each answer is
+            retrieved from a curated public knowledge base before it reaches the language model.</p>
           <div class="ask-prompts" aria-label="Suggested questions">
             <button class="quick-question" type="button" data-question="What are your skills?">Skills</button>
             <button class="quick-question" type="button" data-question="Tell me about your projects">Projects</button>
@@ -76,22 +76,26 @@
           </div>
         </div>
 
-        <div class="chat-card reveal" aria-label="ChatGPT style portfolio chatbot">
+        <div id="chatCard" class="chat-card reveal" aria-label="RAG-powered portfolio chatbot" aria-busy="false">
           <div class="chat-header">
             <div class="chat-avatar" aria-hidden="true">N</div>
             <div>
               <h3>NitishGPT</h3>
-              <div class="chat-status"><span></span> Portfolio assistant · always on</div>
+              <div class="chat-status"><span></span> RAG-grounded · portfolio only</div>
             </div>
           </div>
           <div id="chatMessages" class="chat-messages" aria-live="polite">
-            <div class="message bot">Hi, I am Nitish's portfolio assistant. Ask me about his skills, projects,
-              experience, education, or how to contact him.</div>
+            <div class="chat-entry bot">
+              <div class="message bot">Hi, I am Nitish's portfolio assistant. Ask me about his skills, projects,
+                experience, education, or how to contact him.</div>
+            </div>
           </div>
           <form id="chatForm" class="chat-form">
-            <input id="chatInput" type="text" placeholder="Message NitishGPT..." autocomplete="off"
-              aria-label="Ask a question about Nitish">
-            <button type="submit">Send</button>
+            <input id="chatInput" type="text" maxlength="600" placeholder="Message NitishGPT..." autocomplete="off"
+              aria-label="Ask a question about Nitish" aria-describedby="chatHint">
+            <button id="chatSubmit" type="submit">Send</button>
+            <p id="chatHint" class="chat-hint">Uses curated public portfolio information. Private and unrelated
+              questions are refused.</p>
           </form>
         </div>
       </div>

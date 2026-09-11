@@ -63,9 +63,9 @@ test('sends document embedding configuration to Gemini without exposing it to ca
 
   assert.match(request.url, /gemini-embedding-001:batchEmbedContents$/);
   assert.equal(request.options.headers['x-goog-api-key'], 'test-key');
-  assert.equal(body.requests[0].embedContentConfig.taskType, 'RETRIEVAL_DOCUMENT');
-  assert.equal(body.requests[0].embedContentConfig.title, 'Project');
-  assert.equal(body.requests[0].embedContentConfig.outputDimensionality, 768);
+  assert.equal(body.requests[0].taskType, 'RETRIEVAL_DOCUMENT');
+  assert.equal(body.requests[0].title, 'Project');
+  assert.equal(body.requests[0].outputDimensionality, 768);
   assert.equal(vectors[0].length, 768);
 });
 
