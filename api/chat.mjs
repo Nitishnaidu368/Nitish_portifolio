@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { embedTexts } from '../lib/gemini-embeddings.mjs';
 import {
   buildRetrievalQuery,
@@ -153,68 +154,104 @@ export async function generateText({ question, history, matches }, options = {})
 export function createChatHandler(dependencies = {}) {
   const knowledgeIndex = dependencies.index || index;
   const allowRequest = dependencies.allowRequest || createRateLimiter();
+  const logEvent = dependencies.logEvent;
+  const now = dependencies.now || Date.now;
+  const requestId = dependencies.requestId || randomUUID;
   const embedQuery = dependencies.embedQuery || (async text =>
     (await embedTexts([{ text }], 'RETRIEVAL_QUERY'))[0]
   );
   const answerQuestion = dependencies.generateText || generateText;
 
   return async function chat(request) {
+    const startedAt = now();
+    const id = requestId();
+    const respond = (data, status = 200, headers = {}, details = {}) => {
+      // ponytail: one compact event is enough for this endpoint; add tracing after another service joins the request path.
+      try {
+        logEvent?.({
+          event: 'portfolio_chat_request',
+          requestId: id,
+          method: request.method,
+          outcome: data.status || (status >= 400 ? 'error' : 'ok'),
+          httpStatus: status,
+          durationMs: Math.max(0, now() - startedAt),
+          ...details
+        });
+      } catch {
+        // Logging must never break a visitor response.
+      }
+      return json(data, status, { 'X-Request-Id': id, ...headers });
+    };
+
     if (request.method === 'GET') {
       const ready = Boolean(knowledgeIndex.chunks?.length && Number.isFinite(knowledgeIndex.relevanceThreshold));
-      return json({
+      return respond({
         status: ready ? 'ready' : 'not_ready',
         chunks: knowledgeIndex.chunks?.length || 0,
         calibratedAt: knowledgeIndex.calibratedAt || null
-      }, ready ? 200 : 503);
+      }, ready ? 200 : 503, {}, { providerCalls: 0 });
     }
-    if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, { Allow: 'GET, POST' });
+    if (request.method !== 'POST') return respond({ error: 'Method not allowed.' }, 405, { Allow: 'GET, POST' }, { providerCalls: 0 });
     if (!request.headers.get('content-type')?.includes('application/json')) {
-      return json({ error: 'Content-Type must be application/json.' }, 415);
+      return respond({ error: 'Content-Type must be application/json.' }, 415, {}, { providerCalls: 0 });
     }
 
     let payload;
     try {
       payload = validatePayload(await request.json());
     } catch {
-      return json({ error: 'Invalid chat request.' }, 400);
+      return respond({ error: 'Invalid chat request.' }, 400, {}, { providerCalls: 0 });
     }
 
     const policy = classifyQuestion(payload.question);
     if (policy === 'sensitive' || policy === 'blocked') {
-      return json({ answer: SAFE_REPLIES[policy], status: policy, sources: [] });
+      return respond({ answer: SAFE_REPLIES[policy], status: policy, sources: [] }, 200, {}, { providerCalls: 0 });
     }
     const unsafeHistory = payload.history
       .filter(message => message.role === 'user')
       .map(message => classifyQuestion(message.content))
       .find(status => status === 'sensitive' || status === 'blocked');
     if (unsafeHistory) {
-      return json({ answer: SAFE_REPLIES[unsafeHistory], status: unsafeHistory, sources: [] });
+      return respond({ answer: SAFE_REPLIES[unsafeHistory], status: unsafeHistory, sources: [] }, 200, {}, { providerCalls: 0 });
     }
     if (!knowledgeIndex.chunks?.length || !Number.isFinite(knowledgeIndex.relevanceThreshold)) {
-      return json({ error: 'The portfolio knowledge index is not ready.' }, 503);
+      return respond({ error: 'The portfolio knowledge index is not ready.' }, 503, {}, { providerCalls: 0 });
     }
 
     const retryAfter = allowRequest(request);
     if (retryAfter) {
-      return json({ error: 'Too many chat requests. Please wait a moment and try again.' }, 429, {
+      return respond({ error: 'Too many chat requests. Please wait a moment and try again.' }, 429, {
         'Retry-After': String(retryAfter)
-      });
+      }, { providerCalls: 0 });
     }
 
+    let providerCalls = 0;
     try {
       const retrievalQuery = buildRetrievalQuery(payload.question, payload.history);
+      providerCalls += 1;
       const queryEmbedding = await embedQuery(retrievalQuery);
       const matches = retrieve(knowledgeIndex.chunks, queryEmbedding);
       if (!matches.length || matches[0].score < knowledgeIndex.relevanceThreshold) {
-        return json({ answer: SAFE_REPLIES.off_topic, status: 'off_topic', sources: [] });
+        return respond({ answer: SAFE_REPLIES.off_topic, status: 'off_topic', sources: [] }, 200, {}, {
+          providerCalls,
+          retrievalScore: matches[0] ? Number(matches[0].score.toFixed(4)) : null
+        });
       }
 
+      providerCalls += 1;
       const answer = await answerQuestion({ ...payload, matches });
       if (containsPrivateOutput(answer)) {
-        return json({ answer: SAFE_REPLIES.sensitive, status: 'sensitive', sources: [] });
+        return respond({ answer: SAFE_REPLIES.sensitive, status: 'sensitive', sources: [] }, 200, {}, {
+          providerCalls,
+          retrievalScore: Number(matches[0].score.toFixed(4))
+        });
       }
 
-      return json({ answer, status: 'answered', sources: sourcesFrom(matches) });
+      return respond({ answer, status: 'answered', sources: sourcesFrom(matches) }, 200, {}, {
+        providerCalls,
+        retrievalScore: Number(matches[0].score.toFixed(4)),
+        sourceIds: matches.map(match => match.id)
+      });
     } catch (error) {
       const missingKey = error.message === 'GEMINI_API_KEY is not configured.';
       const rateLimited = error.status === 429;
@@ -222,12 +259,15 @@ export function createChatHandler(dependencies = {}) {
       const message = missingKey ? 'Chat is not configured.' : rateLimited ?
         'The portfolio assistant is at its temporary usage limit. Please try again shortly.' :
         'The portfolio assistant is temporarily unavailable.';
-      return json({ error: message }, status, rateLimited ? { 'Retry-After': error.retryAfter || '60' } : {});
+      return respond({ error: message }, status, rateLimited ? { 'Retry-After': error.retryAfter || '60' } : {}, {
+        providerCalls: missingKey ? 0 : providerCalls,
+        providerStatus: Number.isInteger(error.status) ? error.status : null
+      });
     }
   };
 }
 
-const chat = createChatHandler();
+const chat = createChatHandler({ logEvent: event => console.info(JSON.stringify(event)) });
 
 export default {
   fetch(request) {

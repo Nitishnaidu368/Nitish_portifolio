@@ -53,6 +53,35 @@ test('returns a grounded answer with safe source metadata', async () => {
   assert.equal(generationInput.matches.length, 2);
 });
 
+test('emits correlated telemetry without logging visitor content', async () => {
+  const events = [];
+  const handler = createChatHandler({
+    index,
+    embedQuery: async () => [1, 0],
+    generateText: async () => 'Nitish built a multi-agent project.',
+    logEvent: event => events.push(event),
+    now: () => 100,
+    requestId: () => 'request-test-123'
+  });
+
+  const response = await handler(request({ question: 'What did Nitish build?', history: [] }));
+  const serialized = JSON.stringify(events);
+
+  assert.equal(response.headers.get('x-request-id'), 'request-test-123');
+  assert.deepEqual(events, [{
+    event: 'portfolio_chat_request',
+    requestId: 'request-test-123',
+    method: 'POST',
+    outcome: 'answered',
+    httpStatus: 200,
+    durationMs: 0,
+    providerCalls: 2,
+    retrievalScore: 1,
+    sourceIds: ['project-1', 'skills-1']
+  }]);
+  assert.doesNotMatch(serialized, /What did Nitish build|multi-agent project\./);
+});
+
 test('blocks sensitive and injection questions before calling dependencies', async () => {
   let called = false;
   const handler = createChatHandler({

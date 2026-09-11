@@ -35,6 +35,8 @@ The knowledge index is generated ahead of deployment. A visitor request never re
 4. `api/chat.mjs` — validated, grounded server-side Gemini endpoint.
 5. `index.html`, `script.js`, and `styles.css` — chat UI, sources, and retrieval inspector.
 6. Production readiness — quota handling, rate limiting, health check, security headers, tests, and deployment instructions.
+7. `.github/workflows/rag-quality.yml` — an offline CI gate that validates behavior and prevents a stale or malformed index from shipping.
+8. Privacy-safe observability — one structured event per request for outcomes, latency, provider-call count, retrieval score, and public source IDs.
 
 ## Local workflow
 
@@ -47,6 +49,8 @@ node --test
 ```
 
 Use `build` only after changing `knowledge/profile.json`. Use `evaluate` after rebuilding or changing the evaluation cases. Both commands consume embedding quota; `node --test` is fully offline and consumes none.
+
+GitHub Actions runs the same offline test command on every push and pull request. The index contract test fails when the profile was changed without rebuilding, the index was not calibrated, or an embedding has the wrong shape. No API key is provided to CI.
 
 To inspect one retrieval result without generating an answer:
 
@@ -92,3 +96,9 @@ Edit only public, recruiter-appropriate facts in `knowledge/profile.json`, rebui
 ## Guardrail boundaries
 
 The chatbot uses deterministic checks before and after generation, retrieval relevance, and a strict system instruction. These reduce risk but are not a proof of perfect model behavior. Keep the knowledge base public-only, monitor rejected/error traffic in Vercel, and strengthen the evaluation set whenever a real failure is discovered.
+
+## Observability and privacy
+
+Each API response includes an `X-Request-Id` header, and each function invocation writes one matching structured JSON event to Vercel Runtime Logs. Events include the outcome, HTTP status, duration, number of attempted Gemini calls, retrieval score, and public source IDs when relevant.
+
+Questions, answers, conversation history, IP addresses, and API keys are deliberately excluded. Use the outcome and provider-call fields to spot quota pressure; use the request ID to correlate a visitor failure with its server event. Runtime log retention depends on the Vercel plan.
